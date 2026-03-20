@@ -3,28 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern EQ Tracker</title>
+    <title>Modern EQ Tracker - Mood Colors</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
+            /* Default Dark Mode Colors */
+            --base-bg: #121212;
+            --card-bg: rgba(30, 30, 30, 0.9); /* Slightly transparent to let body bg show through */
             --accent: #bb86fc;
             --text-main: #e0e0e0;
             --text-dim: #a0a0a0;
             --danger: #cf6679;
             --success: #03dac6;
+            
+            /* Mood Color definitions for background shifts */
+            --mood-low: #001f4d; /* Deep Dark Blue */
+            --mood-high: #4d0000; /* Deep Dark Red */
         }
 
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            /* The background now uses a gradient dynamic variable controlled by JS */
+            background: var(--base-bg);
+            background-attachment: fixed; /* Keeps background steady while scrolling */
             color: var(--text-main);
             margin: 0;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
+            transition: background 1s ease; /* Smooth whole-page mood transition */
         }
 
         .container {
@@ -32,7 +41,7 @@
             width: 100%;
         }
 
-        h1 { text-align: center; color: var(--accent); margin-bottom: 30px; }
+        h1 { text-align: center; color: var(--text-main); text-shadow: 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 20px; }
 
         /* Stats Section */
         .stats-container {
@@ -48,16 +57,18 @@
             border-radius: 15px;
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            border: 1px solid #333;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(5px); /* Modern frosted glass effect */
         }
 
         .stat-value {
             font-size: 2.5rem;
             font-weight: bold;
-            color: var(--success);
+            color: var(--accent); /* Default color, JS will change this */
+            transition: color 0.5s ease;
         }
 
-        .stat-label { color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .stat-label { color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; margin-top: 5px;}
 
         /* Calendar Styling */
         .calendar-box {
@@ -66,6 +77,8 @@
             padding: 20px;
             margin-bottom: 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(5px);
         }
 
         .calendar-header {
@@ -75,62 +88,80 @@
             margin-bottom: 20px;
         }
 
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .nav-btn:hover { background: var(--accent); color: black; }
+
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
+            gap: 8px; /* Slightly tighter gap */
         }
 
         .weekday {
             text-align: center;
-            color: var(--accent);
+            color: var(--text-dim);
             font-weight: bold;
+            font-size: 0.8rem;
+            text-transform: uppercase;
             padding-bottom: 10px;
         }
 
         .day {
             aspect-ratio: 1 / 1;
-            background: #2a2a2a;
+            background: #2a2a2a; /* Default empty color */
             border-radius: 10px;
-            padding: 10px;
+            padding: 8px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            border: 1px solid transparent;
+            border: 2px solid transparent; /* Prepare for selection border */
+            box-sizing: border-box;
         }
 
-        .day:hover { border-color: var(--accent); background: #333; }
-        .day.selected { border-color: var(--accent); background: #3d3d3d; }
+        /* Interaction states */
+        .day:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1; }
+        .day.selected { border-color: white; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
 
-        .day-num { font-size: 0.9rem; color: var(--text-dim); }
+        .day-num { font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: bold; }
         .day-score {
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 1.1rem;
+            font-weight: 800;
             text-align: center;
-            color: var(--accent);
+            color: white; /* Text stays white for contrast on mood colors */
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         /* Controls */
         .controls {
             display: flex;
             justify-content: center;
-            gap: 15px;
             margin-bottom: 30px;
         }
 
-        button {
+        button.btn-delete {
+            background: var(--danger);
+            color: white;
             padding: 12px 25px;
             border-radius: 8px;
             border: none;
             cursor: pointer;
             font-weight: bold;
-            transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: opacity 0.2s;
         }
-
-        .btn-delete { background: var(--danger); color: white; }
-        .btn-delete:hover { opacity: 0.8; }
+        button.btn-delete:hover { opacity: 0.8; }
 
         /* Graph Box */
         .graph-box {
@@ -138,8 +169,12 @@
             border-radius: 20px;
             padding: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            height: 400px;
+            height: 350px;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(5px);
+            margin-bottom: 30px;
         }
+        .graph-header { text-align: center; color: var(--text-dim); margin-bottom: 10px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -150,27 +185,30 @@
     <div class="stats-container">
         <div class="stat-card">
             <div id="avg-week" class="stat-value">0.0</div>
-            <div class="stat-label">Weekly Average EQ</div>
+            <div class="stat-label">Weekly Average</div>
         </div>
         <div class="stat-card">
             <div id="avg-overall" class="stat-value">0.0</div>
-            <div class="stat-label">Overall Average EQ</div>
+            <div class="stat-label">Overall Average</div>
         </div>
     </div>
 
     <div class="calendar-box">
         <div class="calendar-header">
+            <button class="nav-btn" onclick="changeMonth(-1)">❮ Prev</button>
             <h2 id="monthDisplay">Month Year</h2>
+            <button class="nav-btn" onclick="changeMonth(1)">Next ❯</button>
         </div>
         <div class="calendar-grid" id="calendarGrid">
             </div>
     </div>
 
     <div class="controls">
-        <button class="btn-delete" onclick="deleteScore()">🗑️ Delete Selected Data</button>
+        <button class="btn-delete" onclick="deleteScore()">🗑️ Delete Selected Day</button>
     </div>
 
     <div class="graph-box">
+        <div class="graph-header">Trend (Last 15 Entries)</div>
         <canvas id="eqChart"></canvas>
     </div>
 </div>
@@ -179,9 +217,38 @@
     let currentData = JSON.parse(localStorage.getItem('eqData')) || {};
     let selectedDate = null;
     let myChart;
+    
+    // Tracking the calendar view state
+    let viewDate = new Date(); 
 
     const monthNames = ["January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"];
+
+    // --- HELPER FUNCTION: Map score to color ---
+    // Range -10 to +10. -10 = Blue, 0 = Grey, +10 = Red
+    function getColorForScore(score) {
+        if (score === null || score === undefined || score === '') return '#2a2a2a'; // Default empty
+
+        // Normalize score from -10...10 range to 0...1 range for color interpolation
+        // -10 becomes 0, 0 becomes 0.5, 10 becomes 1
+        const normalized = (parseFloat(score) + 10) / 20;
+
+        // Interpolate between Blue (low), Grey (mid), and Red (high)
+        // We use HSL for smoother gradients
+        // Blue hue is approx 240, Red hue is 0.
+        // We want 240 (at norm 0) -> 0 (at norm 1).
+        const hue = 240 - (normalized * 240);
+        
+        // Saturation 70%, Lightness 40% (keeping it darkish modern)
+        return `hsl(${hue}, 70%, 45%)`;
+    }
+
+    // --- HELPER FUNCTION: Get color for text based on score ---
+    function getStatTextColor(score) {
+        if (score > 3) return '#03dac6'; // Teal/Green for good
+        if (score < -3) return '#cf6679'; // Pink/Red for bad
+        return '#bb86fc'; // Purple for neutral
+    }
 
     function init() {
         renderCalendar();
@@ -189,12 +256,16 @@
         initChart();
     }
 
+    function changeMonth(offset) {
+        viewDate.setMonth(viewDate.getMonth() + offset);
+        renderCalendar();
+    }
+
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
         const monthDisplay = document.getElementById('monthDisplay');
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth();
+        const year = viewDate.getFullYear();
+        const month = viewDate.getMonth();
 
         monthDisplay.innerText = `${monthNames[month]} ${year}`;
         grid.innerHTML = '';
@@ -217,16 +288,24 @@
 
         // Create Days
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${month + 1}-${d}`;
+            // Ensure month and day are 2 digits for consistent keys (YYYY-MM-DD)
+            const mt = String(month + 1).padStart(2, '0');
+            const dy = String(d).padStart(2, '0');
+            const dateStr = `${year}-${mt}-${dy}`;
+            
             const dayEl = document.createElement('div');
             dayEl.className = 'day';
             if (selectedDate === dateStr) dayEl.classList.add('selected');
             
-            const score = currentData[dateStr] !== undefined ? currentData[dateStr] : '';
+            const score = currentData[dateStr];
             
+            // --- Apply Heatmap Color ---
+            dayEl.style.backgroundColor = getColorForScore(score);
+
+            const displayScore = score !== undefined ? score : '';
             dayEl.innerHTML = `
                 <span class="day-num">${d}</span>
-                <span class="day-score">${score}</span>
+                <span class="day-score">${displayScore}</span>
             `;
 
             dayEl.onclick = () => selectDay(dateStr);
@@ -236,15 +315,17 @@
 
     function selectDay(dateStr) {
         selectedDate = dateStr;
-        renderCalendar();
+        renderCalendar(); // Re-render to show selection border
         
-        const val = prompt("Enter EQ Score (-10 to 10):", currentData[dateStr] || "");
+        // Use standard prompt for input, modern enough for this context
+        const val = prompt(`Enter EQ Score for ${dateStr}\nRange: -10 (Low) to +10 (High):`, currentData[dateStr] || "");
         if (val !== null) {
             const num = parseFloat(val);
             if (!isNaN(num) && num >= -10 && num <= 10) {
                 currentData[dateStr] = num;
                 saveData();
             } else if (val === "") {
+                // If input is empty, delete the data
                 delete currentData[dateStr];
                 saveData();
             } else {
@@ -257,6 +338,7 @@
         if (selectedDate && currentData[selectedDate] !== undefined) {
             if (confirm(`Delete score for ${selectedDate}?`)) {
                 delete currentData[selectedDate];
+                selectedDate = null; // deselect
                 saveData();
             }
         } else {
@@ -276,45 +358,93 @@
         if (scores.length === 0) {
             document.getElementById('avg-overall').innerText = "0.0";
             document.getElementById('avg-week').innerText = "0.0";
+            updateBodyBackground(0); // Default bg
             return;
         }
 
         // Overall Average
-        const overallAvg = scores.reduce((a, b) => a + b, 0) / scores.length;
-        document.getElementById('avg-overall').innerText = overallAvg.toFixed(1);
+        const overallSum = scores.reduce((a, b) => a + b, 0);
+        const overallAvg = overallSum / scores.length;
+        const overallEl = document.getElementById('avg-overall');
+        overallEl.innerText = overallAvg.toFixed(1);
+        overallEl.style.color = getStatTextColor(overallAvg);
 
-        // Weekly Average (Last 7 entries or records within last 7 days)
-        // For simplicity, we'll average the last 7 logged entries
-        const last7 = scores.slice(-7);
-        const weeklyAvg = last7.reduce((a, b) => a + b, 0) / last7.length;
-        document.getElementById('avg-week').innerText = weeklyAvg.toFixed(1);
+        // Weekly Average (Last 7 *entries*, not necessarily last 7 calendar days)
+        // Sort keys to get the actual *latest* entries
+        const sortedDates = Object.keys(currentData).sort((a, b) => new Date(a) - new Date(b));
+        const last7Dates = sortedDates.slice(-7);
+        const last7Scores = last7Dates.map(date => currentData[date]);
+        
+        const weekSum = last7Scores.reduce((a, b) => a + b, 0);
+        const weeklyAvg = weekSum / last7Scores.length;
+        const weekEl = document.getElementById('avg-week');
+        weekEl.innerText = weeklyAvg.toFixed(1);
+        weekEl.style.color = getStatTextColor(weeklyAvg);
+
+        // --- Update whole page background based on weekly average ---
+        updateBodyBackground(weeklyAvg);
+    }
+
+    // --- CHANGE WHOLE BACKGROUND BASED ON MOOD ---
+    function updateBodyBackground(avgScore) {
+        // Normalize -10...10 to 0...1
+        const normalized = (avgScore + 10) / 20;
+        
+        // Define colors in RGB for mixing
+        // Blue (Low): rgb(0, 31, 77)
+        // Red (High): rgb(77, 0, 0)
+        
+        const r = Math.round(0 + (normalized * 77));
+        const b = Math.round(77 - (normalized * 77));
+        const g = 0; // Keep green out for deep tones
+
+        // Apply a subtle radial gradient emanating from the top
+        const dynamicColor = `rgb(${r}, ${g}, ${b})`;
+        document.body.style.background = `radial-gradient(circle at top, ${dynamicColor} 0%, #121212 70%)`;
     }
 
     function initChart() {
         const ctx = document.getElementById('eqChart').getContext('2d');
+        
+        // Define gradient for line fill
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(187, 134, 252, 0.3)');   
+        gradient.addColorStop(1, 'rgba(187, 134, 252, 0)');
+
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: [], // No dates, will use indices
+                labels: [], // Using sequential Entry IDs
                 datasets: [{
                     label: 'EQ Score',
                     data: [],
-                    borderColor: '#bb86fc',
-                    backgroundColor: 'rgba(187, 134, 252, 0.2)',
-                    tension: 0.4,
+                    borderColor: '#bb86fc', // Accent purple
+                    backgroundColor: gradient, // Fills under the line
+                    tension: 0.4, // Smooth curves
                     fill: true,
-                    pointRadius: 5
+                    pointRadius: 4,
+                    pointBackgroundColor: '#white',
+                    borderWidth: 3
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { min: -10, max: 10, grid: { color: '#333' } },
-                    x: { display: true, grid: { display: false }, ticks: { color: '#a0a0a0' } }
+                    y: { 
+                        min: -10, 
+                        max: 10, 
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#a0a0a0' }
+                    },
+                    x: { 
+                        display: true, 
+                        grid: { display: false }, 
+                        ticks: { color: '#808080' } 
+                    }
                 },
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false } // Hide legend for cleaner look
                 }
             }
         });
@@ -322,19 +452,23 @@
     }
 
     function updateChart() {
-        // Sort keys by date to ensure the graph flows correctly
+        // 1. Sort keys by date to ensure chronological order
         const sortedDates = Object.keys(currentData).sort((a, b) => new Date(a) - new Date(b));
-        const values = sortedDates.map(date => currentData[date]);
         
-        // Use generic "Day 1, Day 2..." labels as requested
+        // 2. ONLY TAKE LAST 15 ENTRIES per request
+        const last15Dates = sortedDates.slice(-15);
+        const values = last15Dates.map(date => currentData[date]);
+        
+        // 3. Map to generic Labels (Entry 1, Entry 2...) so dates don't look ugly
         myChart.data.labels = values.map((_, i) => `Entry ${i + 1}`);
         myChart.data.datasets[0].data = values;
+        
         myChart.update();
     }
 
+    // Run app
     init();
 </script>
 
 </body>
-  </html>
-              
+</html>
