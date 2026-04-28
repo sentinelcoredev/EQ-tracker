@@ -3,267 +3,684 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuantX Core - EQ Tracker</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>QuantX Core — EQ Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
-:root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --accent: #6366f1;
-  --green: #22c55e;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #0f172a, #020617);
-  color: var(--text);
-}
+  :root {
+    --bg:       #080d1a;
+    --surface:  rgba(255,255,255,0.03);
+    --border:   rgba(255,255,255,0.07);
+    --accent:   #a78bfa;
+    --accent2:  #7c3aed;
+    --green:    #34d399;
+    --blue:     #60a5fa;
+    --pink:     #f472b6;
+    --red:      #f87171;
+    --yellow:   #fbbf24;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --mono:     'Space Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
 
-.container {
-  max-width: 1100px;
-  margin: auto;
-  padding: 20px;
-}
+  html { scroll-behavior: smooth; }
 
-.navbar {
-  padding: 15px 20px;
-  background: rgba(15,23,42,0.8);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-.card {
-  background: rgba(30,41,59,0.7);
-  border-radius: 16px;
-  padding: 20px;
-  margin-top: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  transition: 0.3s;
-}
+  /* Subtle animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(52,211,153,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 60% 40%, rgba(96,165,250,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
-.card:hover {
-  transform: translateY(-5px);
-}
+  /* Grain overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  margin-top: 10px;
-  background: #0f172a;
-  color: white;
-}
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
 
-button {
-  margin-top: 15px;
-  background: var(--accent);
-  border: none;
-  padding: 10px;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-}
+  /* ── NAVBAR ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    background: rgba(8,13,26,0.85);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
 
-button:hover {
-  background: #4f46e5;
-}
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-.stats {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
+  .nav-logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+  }
 
-.stat-box {
-  flex: 1;
-  background: var(--card);
-  padding: 15px;
-  border-radius: 12px;
-  text-align: center;
-}
+  .nav-title { font-family: var(--mono); font-size: 16px; color: var(--accent); }
+  .nav-sub   { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-.stat-box h3 {
-  margin: 0;
-  color: var(--green);
-}
+  .nav-pill {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
 
-table {
-  width: 100%;
-  margin-top: 10px;
-  border-collapse: collapse;
-}
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 26px;
+    margin-top: 22px;
+    animation: fadeUp 0.4s ease both;
+  }
 
-td, th {
-  padding: 8px;
-  text-align: center;
-}
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
-ul li {
-  margin-bottom: 10px;
-  line-height: 1.6;
-}
+  .card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 18px;
+  }
+
+  /* ── FORM ── */
+  .form-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .field {
+    flex: 1;
+    min-width: 130px;
+    padding: 13px 15px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: var(--sans);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: rgba(167,139,250,0.5);
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.1);
+  }
+
+  .field::placeholder { color: var(--muted); }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+  .btn-add {
+    flex: 0 0 auto;
+    padding: 13px 24px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+    white-space: nowrap;
+  }
+
+  .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(124,58,237,0.5);
+  }
+
+  .btn-add:active { transform: translateY(0); }
+
+  .error-msg {
+    margin-top: 12px;
+    color: var(--red);
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 22px;
+  }
+
+  @media (max-width: 640px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .stat-box:hover {
+    transform: translateY(-3px);
+    border-color: rgba(167,139,250,0.2);
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    margin-top: 8px;
+    line-height: 1;
+  }
+
+  /* ── CHART ── */
+  .chart-wrap { position: relative; height: 240px; margin-top: 4px; }
+
+  .chart-legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 14px;
+  }
+
+  .legend-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  /* ── TABLE ── */
+  .history-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 460px;
+  }
+
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: #cbd5e1;
+  }
+
+  tr { transition: background 0.15s; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .del-btn {
+    opacity: 0;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.2);
+    color: var(--red);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: opacity 0.2s, background 0.2s;
+  }
+
+  tr:hover .del-btn { opacity: 1; }
+  .del-btn:hover { background: rgba(248,113,113,0.2); }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 36px 0;
+  }
+
+  .flash-row td { animation: flashRow 1.2s ease; }
+
+  @keyframes flashRow {
+    0%   { background: rgba(167,139,250,0.15); }
+    100% { background: transparent; }
+  }
+
+  /* ── TIPS GRID ── */
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .tip-card {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 18px;
+    cursor: default;
+    transition: transform 0.2s, background 0.2s, border-color 0.2s;
+  }
+
+  .tip-card:hover {
+    transform: translateY(-3px);
+    background: rgba(167,139,250,0.06);
+    border-color: rgba(167,139,250,0.15);
+  }
+
+  .tip-icon  { font-size: 22px; }
+  .tip-title { font-size: 13px; font-weight: 600; color: #c4b5fd; margin: 8px 0 4px; }
+  .tip-desc  { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    margin-top: 48px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.25); border-radius: 3px; }
 </style>
 </head>
 
 <body>
 
-<div class="navbar">
-  <h2>QuantX Core - EQ Tracker</h2>
-</div>
-
-<div class="container">
-
-<div class="card">
-  <h3>Add Entry</h3>
-  <input type="date" id="date">
-  <input type="number" id="hours" placeholder="Hours Worked / Studied">
-  <input type="number" id="score" placeholder="Performance Score (%)">
-  <button id="addBtn">Add Entry</button>
-</div>
-
-<div class="card stats">
-  <div class="stat-box">
-    <p>Total Days</p>
-    <h3 id="days">0</h3>
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">📊</div>
+    <div>
+      <div class="nav-title">QuantX Core</div>
+      <div class="nav-sub">EQ Performance Tracker</div>
+    </div>
   </div>
-  <div class="stat-box">
-    <p>Average Score</p>
-    <h3 id="avg">0%</h3>
+  <div class="nav-pill" id="entryCount">0 entries</div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ADD ENTRY -->
+  <div class="card" style="animation-delay:0.05s">
+    <div class="card-label">+ Log Entry</div>
+    <div class="form-row">
+      <input type="date" id="inp-date" class="field">
+      <input type="number" id="inp-hours" class="field" placeholder="Hours worked" min="0" step="0.5">
+      <input type="number" id="inp-score" class="field" placeholder="Score (0–100)" min="0" max="100">
+      <button class="btn-add" onclick="addEntry()">Add →</button>
+    </div>
+    <div class="error-msg" id="error"></div>
   </div>
-  <div class="stat-box">
-    <p>Total Hours</p>
-    <h3 id="totalHours">0</h3>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-box" style="animation-delay:0.1s">
+      <div class="stat-label">Total Days</div>
+      <div class="stat-val" id="stat-days" style="color:var(--accent)">0</div>
+    </div>
+    <div class="stat-box" style="animation-delay:0.15s">
+      <div class="stat-label">Avg Score</div>
+      <div class="stat-val" id="stat-avg" style="color:var(--green)">0%</div>
+    </div>
+    <div class="stat-box" style="animation-delay:0.2s">
+      <div class="stat-label">Total Hours</div>
+      <div class="stat-val" id="stat-hours" style="color:var(--blue)">0h</div>
+    </div>
+    <div class="stat-box" style="animation-delay:0.25s">
+      <div class="stat-label">Best Score</div>
+      <div class="stat-val" id="stat-best" style="color:var(--pink)">0%</div>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <h3>Performance Trend</h3>
-  <canvas id="chart"></canvas>
-</div>
+  <!-- CHART -->
+  <div class="card" id="chart-card" style="animation-delay:0.3s; display:none;">
+    <div class="card-label">Performance Trend</div>
+    <div class="chart-wrap">
+      <canvas id="myChart"></canvas>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Score %</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Hours</div>
+    </div>
+  </div>
 
-<div class="card">
-  <h3>History</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Hours</th>
-        <th>Score</th>
-      </tr>
-    </thead>
-    <tbody id="tableData"></tbody>
-  </table>
-</div>
+  <!-- HISTORY TABLE -->
+  <div class="card" style="animation-delay:0.35s">
+    <div class="card-label">History</div>
+    <div class="history-wrap">
+      <div class="empty-state" id="empty-msg">No entries yet — start logging above.</div>
+      <table id="data-table" style="display:none;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Hours</th>
+            <th>Score</th>
+            <th>Rating</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
 
-<div class="card">
-  <h2>🚀 Why This Tracker Improves Performance (Real Life)</h2>
+  <!-- TIPS -->
+  <div class="card" style="animation-delay:0.4s">
+    <div class="card-label">🚀 Why This Tracker Works</div>
+    <div class="tips-grid" id="tips-grid"></div>
+  </div>
 
-  <ul>
-    <li><strong>Clarity Over Guessing:</strong> You stop relying on feelings and start using actual data.</li>
-    <li><strong>Consistency Engine:</strong> Daily tracking builds discipline automatically.</li>
-    <li><strong>Applies Beyond Studies:</strong> Works for coding, gym, business, habits, or skill building.</li>
-    <li><strong>Motivation Through Progress:</strong> Seeing growth visually pushes you to continue.</li>
-    <li><strong>Pattern Recognition:</strong> Identify when and how you perform best.</li>
-    <li><strong>Time Awareness:</strong> Forces accountability for how you spend your day.</li>
-    <li><strong>Feedback Loop:</strong> Track → Analyze → Improve → Repeat.</li>
-    <li><strong>Better Decision Making:</strong> Helps adjust strategies using real results.</li>
-    <li><strong>Long-Term Growth:</strong> Small daily improvements compound massively.</li>
-    <li><strong>Universal System:</strong> Can be used for academics, freelancing, startup building, or personal growth.</li>
-  </ul>
-</div>
+  <footer>QuantX Core · Built for performance-driven individuals</footer>
 
-</div>
+</div><!-- /wrap -->
 
 <script>
-let data = JSON.parse(localStorage.getItem("eqData")) || [];
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'quantx-eq-data-v2';
+let data = [];
 
-const addBtn = document.getElementById("addBtn");
-addBtn.addEventListener("click", addEntry);
+try { data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { data = []; }
 
-function saveData() {
-  localStorage.setItem("eqData", JSON.stringify(data));
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
 }
 
-function addEntry() {
-  const date = document.getElementById("date").value;
-  const hours = parseFloat(document.getElementById("hours").value);
-  const score = parseFloat(document.getElementById("score").value);
+// ─── TIPS ────────────────────────────────────────────────────────────────────
+const TIPS = [
+  { icon:'🎯', title:'Clarity Over Guessing',       desc:'Stop relying on feelings — use actual data to drive decisions.' },
+  { icon:'⚙️', title:'Consistency Engine',           desc:'Daily tracking builds discipline automatically over time.' },
+  { icon:'🌐', title:'Applies Beyond Studies',       desc:'Works for coding, gym, business, habits, or any skill.' },
+  { icon:'📈', title:'Motivation Through Progress',  desc:'Seeing growth visually pushes you to keep going.' },
+  { icon:'🔍', title:'Pattern Recognition',          desc:'Identify when and how you perform best across the week.' },
+  { icon:'⏱️', title:'Time Awareness',               desc:'Forces accountability for how you truly spend each day.' },
+  { icon:'🔄', title:'Feedback Loop',                desc:'Track → Analyze → Improve → Repeat. Endlessly.' },
+  { icon:'🧠', title:'Better Decision Making',       desc:'Adjust strategies based on real data, not gut feelings.' },
+  { icon:'🚀', title:'Long-Term Growth',             desc:'Small daily improvements compound into massive results.' },
+  { icon:'🌍', title:'Universal System',             desc:'Use for academics, freelancing, startups, or personal growth.' },
+];
 
-  if (!date || isNaN(hours) || isNaN(score)) {
-    alert("Please fill all fields correctly");
-    return;
-  }
+document.getElementById('tips-grid').innerHTML = TIPS.map(t => `
+  <div class="tip-card">
+    <div class="tip-icon">${t.icon}</div>
+    <div class="tip-title">${t.title}</div>
+    <div class="tip-desc">${t.desc}</div>
+  </div>
+`).join('');
 
-  data.push({ date, hours, score });
-  saveData();
-
-  // Clear inputs
-  document.getElementById("hours").value = "";
-  document.getElementById("score").value = "";
-
-  render();
-}
-
-function render() {
-  const table = document.getElementById("tableData");
-  table.innerHTML = "";
-
-  let totalScore = 0;
-  let totalHours = 0;
-
-  data.forEach(d => {
-    totalScore += d.score;
-    totalHours += d.hours;
-
-    table.innerHTML += `
-      <tr>
-        <td>${d.date}</td>
-        <td>${d.hours}</td>
-        <td>${d.score}%</td>
-      </tr>
-    `;
-  });
-
-  document.getElementById("days").innerText = data.length;
-  document.getElementById("avg").innerText = data.length ? (totalScore / data.length).toFixed(1) + "%" : "0%";
-  document.getElementById("totalHours").innerText = totalHours;
-
-  drawChart();
-}
-
-let chart;
+// ─── CHART ───────────────────────────────────────────────────────────────────
+let chartInst = null;
 
 function drawChart() {
-  const ctx = document.getElementById("chart").getContext("2d");
+  const card = document.getElementById('chart-card');
 
-  if (chart) chart.destroy();
+  if (data.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = '';
 
-  chart = new Chart(ctx, {
-    type: "line",
+  const labels = data.map(d => d.date.slice(5));
+  const scores = data.map(d => d.score);
+  const hours  = data.map(d => d.hours);
+  const ctx    = document.getElementById('myChart').getContext('2d');
+
+  const scoreGrad = ctx.createLinearGradient(0, 0, 0, 240);
+  scoreGrad.addColorStop(0,   'rgba(167,139,250,0.3)');
+  scoreGrad.addColorStop(1,   'rgba(167,139,250,0)');
+
+  const hoursGrad = ctx.createLinearGradient(0, 0, 0, 240);
+  hoursGrad.addColorStop(0,   'rgba(52,211,153,0.2)');
+  hoursGrad.addColorStop(1,   'rgba(52,211,153,0)');
+
+  if (chartInst) chartInst.destroy();
+
+  chartInst = new Chart(ctx, {
+    type: 'line',
     data: {
-      labels: data.map(d => d.date),
-      datasets: [{
-        label: "Performance %",
-        data: data.map(d => d.score),
-        borderWidth: 2,
-        tension: 0.3
-      }]
+      labels,
+      datasets: [
+        {
+          label: 'Score %',
+          data: scores,
+          borderColor: '#a78bfa',
+          backgroundColor: scoreGrad,
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: '#a78bfa',
+          pointRadius: 4,
+          pointHoverRadius: 7,
+        },
+        {
+          label: 'Hours',
+          data: hours,
+          borderColor: '#34d399',
+          backgroundColor: hoursGrad,
+          borderWidth: 2,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: '#34d399',
+          pointRadius: 3,
+          pointHoverRadius: 6,
+        }
+      ]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: true }
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          borderColor: 'rgba(167,139,250,0.3)',
+          borderWidth: 1,
+          titleFont: { family: "'Space Mono', monospace", size: 11 },
+          bodyFont:  { family: "'Space Mono', monospace", size: 12 },
+          titleColor: '#94a3b8',
+          bodyColor:  '#e2e8f0',
+          padding: 12,
+          callbacks: {
+            label: ctx => `  ${ctx.dataset.label}: ${ctx.parsed.y}${ctx.datasetIndex === 0 ? '%' : 'h'}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:  { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#64748b', font: { family: "'Space Mono', monospace", size: 10 } },
+          border:{ display: false }
+        },
+        y: {
+          grid:  { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#64748b', font: { family: "'Space Mono', monospace", size: 10 } },
+          border:{ display: false }
+        }
       }
     }
   });
 }
 
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function scoreColor(s) {
+  if (s >= 80) return '#34d399';
+  if (s >= 60) return '#fbbf24';
+  return '#f87171';
+}
+
+function scoreEmoji(s) {
+  if (s >= 90) return '🔥';
+  if (s >= 75) return '⚡';
+  if (s >= 60) return '📈';
+  return '💪';
+}
+
+function render(flashDate) {
+  const totalDays  = data.length;
+  const totalHours = data.reduce((a, d) => a + d.hours, 0);
+  const avgScore   = totalDays ? (data.reduce((a, d) => a + d.score, 0) / totalDays) : 0;
+  const bestScore  = totalDays ? Math.max(...data.map(d => d.score)) : 0;
+
+  document.getElementById('stat-days').textContent  = totalDays;
+  document.getElementById('stat-avg').textContent   = totalDays ? avgScore.toFixed(1) + '%' : '0%';
+  document.getElementById('stat-hours').textContent = totalHours.toFixed(1) + 'h';
+  document.getElementById('stat-best').textContent  = bestScore + '%';
+  document.getElementById('entryCount').textContent = `${totalDays} ${totalDays === 1 ? 'entry' : 'entries'}`;
+
+  const avgEl = document.getElementById('stat-avg');
+  avgEl.style.color = totalDays ? scoreColor(avgScore) : 'var(--green)';
+
+  const emptyMsg = document.getElementById('empty-msg');
+  const tbl      = document.getElementById('data-table');
+  const tbody    = document.getElementById('table-body');
+
+  if (totalDays === 0) {
+    emptyMsg.style.display = '';
+    tbl.style.display = 'none';
+  } else {
+    emptyMsg.style.display = 'none';
+    tbl.style.display = '';
+    tbody.innerHTML = data.map((d, i) => `
+      <tr id="row-${i}" class="${flashDate === d.date ? 'flash-row' : ''}">
+        <td>${d.date}</td>
+        <td style="color:var(--blue)">${d.hours}h</td>
+        <td style="color:${scoreColor(d.score)}">${d.score}%</td>
+        <td>${scoreEmoji(d.score)}</td>
+        <td style="text-align:right">
+          <button class="del-btn" onclick="deleteEntry(${i})">del</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  drawChart();
+}
+
+// ─── ADD ENTRY ────────────────────────────────────────────────────────────────
+function addEntry() {
+  const dateEl  = document.getElementById('inp-date');
+  const hoursEl = document.getElementById('inp-hours');
+  const scoreEl = document.getElementById('inp-score');
+  const errEl   = document.getElementById('error');
+
+  const date  = dateEl.value.trim();
+  const hours = parseFloat(hoursEl.value);
+  const score = parseFloat(scoreEl.value);
+
+  // Validation
+  if (!date) { errEl.textContent = 'Please select a date.'; return; }
+  if (isNaN(hours) || hours < 0) { errEl.textContent = 'Please enter a valid number of hours (≥ 0).'; return; }
+  if (isNaN(score) || score < 0 || score > 100) { errEl.textContent = 'Score must be between 0 and 100.'; return; }
+
+  errEl.textContent = '';
+
+  data.push({ date, hours, score });
+  data.sort((a, b) => a.date.localeCompare(b.date));
+  save();
+
+  hoursEl.value = '';
+  scoreEl.value = '';
+
+  render(date);
+
+  // Scroll to table after a beat
+  setTimeout(() => {
+    document.getElementById('data-table').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 200);
+}
+
+// ─── DELETE ENTRY ─────────────────────────────────────────────────────────────
+function deleteEntry(i) {
+  data.splice(i, 1);
+  save();
+  render();
+}
+
+// ─── KEYBOARD SHORTCUT ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addEntry();
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 render();
 </script>
 
