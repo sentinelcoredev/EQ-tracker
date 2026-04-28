@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuantX EQ Tracker</title>
+<title>QuantX Core - EQ Tracker</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -32,9 +32,8 @@ body {
 }
 
 .navbar {
-  background: rgba(15,23,42,0.8);
   padding: 15px 20px;
-  backdrop-filter: blur(10px);
+  background: rgba(15,23,42,0.8);
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
@@ -51,7 +50,7 @@ body {
   transform: translateY(-5px);
 }
 
-input, select {
+input {
   width: 100%;
   padding: 10px;
   border-radius: 10px;
@@ -69,6 +68,10 @@ button {
   border-radius: 10px;
   color: white;
   cursor: pointer;
+}
+
+button:hover {
+  background: #4f46e5;
 }
 
 .stats {
@@ -101,23 +104,27 @@ td, th {
   text-align: center;
 }
 
+ul li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
 </style>
 </head>
 
 <body>
 
 <div class="navbar">
-  <h2>QuantX EQ Tracker</h2>
+  <h2>QuantX Core - EQ Tracker</h2>
 </div>
 
 <div class="container">
 
 <div class="card">
-  <h3>Add Study Entry</h3>
+  <h3>Add Entry</h3>
   <input type="date" id="date">
-  <input type="number" id="hours" placeholder="Study Hours">
-  <input type="number" id="score" placeholder="Score (%)">
-  <button onclick="addEntry()">Add Entry</button>
+  <input type="number" id="hours" placeholder="Hours Worked / Studied">
+  <input type="number" id="score" placeholder="Performance Score (%)">
+  <button id="addBtn">Add Entry</button>
 </div>
 
 <div class="card stats">
@@ -126,7 +133,7 @@ td, th {
     <h3 id="days">0</h3>
   </div>
   <div class="stat-box">
-    <p>Avg Score</p>
+    <p>Average Score</p>
     <h3 id="avg">0%</h3>
   </div>
   <div class="stat-box">
@@ -136,7 +143,7 @@ td, th {
 </div>
 
 <div class="card">
-  <h3>Performance Chart</h3>
+  <h3>Performance Trend</h3>
   <canvas id="chart"></canvas>
 </div>
 
@@ -154,10 +161,30 @@ td, th {
   </table>
 </div>
 
+<div class="card">
+  <h2>🚀 Why This Tracker Improves Performance (Real Life)</h2>
+
+  <ul>
+    <li><strong>Clarity Over Guessing:</strong> You stop relying on feelings and start using actual data.</li>
+    <li><strong>Consistency Engine:</strong> Daily tracking builds discipline automatically.</li>
+    <li><strong>Applies Beyond Studies:</strong> Works for coding, gym, business, habits, or skill building.</li>
+    <li><strong>Motivation Through Progress:</strong> Seeing growth visually pushes you to continue.</li>
+    <li><strong>Pattern Recognition:</strong> Identify when and how you perform best.</li>
+    <li><strong>Time Awareness:</strong> Forces accountability for how you spend your day.</li>
+    <li><strong>Feedback Loop:</strong> Track → Analyze → Improve → Repeat.</li>
+    <li><strong>Better Decision Making:</strong> Helps adjust strategies using real results.</li>
+    <li><strong>Long-Term Growth:</strong> Small daily improvements compound massively.</li>
+    <li><strong>Universal System:</strong> Can be used for academics, freelancing, startup building, or personal growth.</li>
+  </ul>
+</div>
+
 </div>
 
 <script>
 let data = JSON.parse(localStorage.getItem("eqData")) || [];
+
+const addBtn = document.getElementById("addBtn");
+addBtn.addEventListener("click", addEntry);
 
 function saveData() {
   localStorage.setItem("eqData", JSON.stringify(data));
@@ -165,13 +192,21 @@ function saveData() {
 
 function addEntry() {
   const date = document.getElementById("date").value;
-  const hours = document.getElementById("hours").value;
-  const score = document.getElementById("score").value;
+  const hours = parseFloat(document.getElementById("hours").value);
+  const score = parseFloat(document.getElementById("score").value);
 
-  if (!date || !hours || !score) return alert("Fill all fields");
+  if (!date || isNaN(hours) || isNaN(score)) {
+    alert("Please fill all fields correctly");
+    return;
+  }
 
-  data.push({ date, hours: Number(hours), score: Number(score) });
+  data.push({ date, hours, score });
   saveData();
+
+  // Clear inputs
+  document.getElementById("hours").value = "";
+  document.getElementById("score").value = "";
+
   render();
 }
 
@@ -214,55 +249,23 @@ function drawChart() {
     data: {
       labels: data.map(d => d.date),
       datasets: [{
-        label: "Score %",
+        label: "Performance %",
         data: data.map(d => d.score),
         borderWidth: 2,
         tension: 0.3
       }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true }
+      }
     }
   });
 }
 
 render();
 </script>
-<div class="container">
-  <div class="card">
-    <h2>🚀 Why Use the EQ Tracker?</h2>
 
-    <ul style="line-height:1.8; color: var(--muted);">
-
-      <li><strong>📊 Builds Self-Awareness:</strong>  
-      Tracking daily study hours and scores helps you clearly see your strengths and weak areas instead of guessing.</li>
-
-      <li><strong>🎯 Improves Consistency:</strong>  
-      When you log progress every day, you naturally stay consistent because you don’t want to break your streak.</li>
-
-      <li><strong>📈 Data-Driven Improvement:</strong>  
-      Your performance graph shows trends over time, helping you adjust strategies based on real data.</li>
-
-      <li><strong>🧠 Reduces Overthinking:</strong>  
-      Instead of worrying “Am I improving?”, you can actually *see* your progress visually.</li>
-
-      <li><strong>⚡ Boosts Motivation:</strong>  
-      Watching your scores and study hours grow creates positive reinforcement and keeps you going.</li>
-
-      <li><strong>📅 Better Time Management:</strong>  
-      By tracking hours, you become more conscious of how you spend your day.</li>
-
-      <li><strong>🎓 Exam-Oriented Focus:</strong>  
-      Helps align your preparation with measurable outcomes like scores and efficiency.</li>
-
-      <li><strong>🔁 Feedback Loop:</strong>  
-      Daily entries create a loop → Track → Analyze → Improve → Repeat.</li>
-
-      <li><strong>💡 Identifies Patterns:</strong>  
-      You’ll notice what study methods, timings, or habits give you the best results.</li>
-
-      <li><strong>🏆 Long-Term Growth:</strong>  
-      Small daily improvements tracked over time lead to major performance gains.</li>
-
-    </ul>
-  </div>
-</div>
 </body>
 </html>
